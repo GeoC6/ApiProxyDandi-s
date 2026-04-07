@@ -1,0 +1,91 @@
+{
+    "name": "api-autoservicio-intermedia",
+    "version": "1.0.0",
+    "description": "API intermedia para autoservicio yogurt - offline first con system tray y auto-start automático",
+    "main": "main.js",
+    "type": "module",
+    "scripts": {
+        "start": "electron main.js",
+        "dev": "electron main.js --dev",
+        "server-only": "node server.js",
+        "build": "electron-builder --win --x64",
+        "build-dir": "electron-builder --dir",
+        "pack": "electron-builder --dir",
+        "dist": "npm run build"
+    },
+    "build": {
+        "appId": "com.autoservicio.api",
+        "productName": "API Autoservicio",
+        "directories": {
+            "output": "dist"
+        },
+        "asarUnpack": [
+            "PrinterHelper.exe"
+        ],
+        "files": [
+            "main.js",
+            "server.js",
+            "database.js",
+            "package.json",
+            ".env",
+            "services/**/*",
+            "routes/**/*",
+            "display/**/*",
+            "dashboard.html",
+            "config-panel.html",
+            "log-viewer.html",
+            "realtime-logs.html",
+            "PrinterHelper.exe",
+            "icono.ico",
+            "restart_api.bat",
+            "node_modules/**/*"
+        ],
+        "win": {
+            "target": {
+                "target": "nsis",
+                "arch": [
+                    "x64"
+                ]
+            },
+            "icon": "icono.ico",
+            "requestedExecutionLevel": "asInvoker"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "allowElevation": true,
+            "installerIcon": "icono.ico",
+            "uninstallerIcon": "icono.ico",
+            "createDesktopShortcut": "always",
+            "createStartMenuShortcut": true,
+            "shortcutName": "API Autoservicio",
+            "runAfterFinish": true,
+            "deleteAppDataOnUninstall": false,
+            "perMachine": false,
+            "artifactName": "${productName} Setup ${version}.${ext}",
+            "include": "installer-script.nsh"
+        }
+    },
+    "dependencies": {
+        "axios": "^1.7.7",
+        "cors": "^2.8.5",
+        "dotenv": "^17.2.3",
+        "express": "^4.19.2",
+        "sqlite3": "^5.1.6"
+    },
+    "devDependencies": {
+        "electron": "^37.2.4",
+        "electron-builder": "^25.1.8"
+    },
+    "keywords": [
+        "autoservicio",
+        "offline",
+        "api",
+        "intermedia",
+        "electron",
+        "system-tray",
+        "auto-start"
+    ],
+    "author": "Diego",
+    "license": "ISC"
+}

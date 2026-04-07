@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control - API Autoservicio</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .card-icon.purple {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .card-icon.blue {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .card-icon.green {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+        }
+
+        .card-icon.orange {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+
+        .card-title {
+            flex: 1;
+        }
+
+        .card-title h3 {
+            font-size: 18px;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+
+        .card-title p {
+            font-size: 13px;
+            color: #a0aec0;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f7fafc;
+            color: #2d3748;
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #edf2f7;
+            border-color: #cbd5e0;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .status-item {
+            background: #f7fafc;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 3px solid;
+        }
+
+        .status-item.success {
+            border-color: #48bb78;
+        }
+
+        .status-item.warning {
+            border-color: #ed8936;
+        }
+
+        .status-item.info {
+            border-color: #4299e1;
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: #718096;
+            margin-bottom: 4px;
+        }
+
+        .status-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .link-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .link-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #2d3748;
+            transition: all 0.2s;
+        }
+
+        .link-item:hover {
+            background: #edf2f7;
+            transform: translateX(4px);
+        }
+
+        .link-label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .link-arrow {
+            color: #a0aec0;
+            font-size: 18px;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #e0e7ff 0%, #cfd9fe 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-box h4 {
+            color: #4c51bf;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            color: #4c51bf;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            animation: fadeIn 0.4s ease-out backwards;
+        }
+
+        .card:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .card:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .card:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+
+        .card:nth-child(5) {
+            animation-delay: 0.5s;
+        }
+
+        .card:nth-child(6) {
+            animation-delay: 0.6s;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>Panel de Control</h1>
+            <p>API Autoservicio - Gestión y Monitoreo</p>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon purple">S</div>
+                    <div class="card-title">
+                        <h3>Estado del Sistema</h3>
+                        <p>Información en tiempo real</p>
+                    </div>
+                </div>
+                <div class="status-grid">
+                    <div class="status-item success">
+                        <div class="status-label">API</div>
+                        <div class="status-value" id="apiStatus">Online</div>
+                    </div>
+                    <div class="status-item info">
+                        <div class="status-label">Puerto</div>
+                        <div class="status-value" id="apiPort">9000</div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="openUrl('http://localhost:9000')">
+                    Abrir API en Navegador
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon blue">M</div>
+                    <div class="card-title">
+                        <h3>Monitoreo</h3>
+                        <p>Estado y sincronización</p>
+                    </div>
+                </div>
+                <div class="link-list">
+                    <a href="#" class="link-item"
+                        onclick="openUrl('http://localhost:9000/api/sync-status'); return false;">
+                        <span class="link-label">Estado de Sincronización</span>
+                        <span class="link-arrow">→</span>
+                    </a>
+                    <a href="#" class="link-item"
+                        onclick="openUrl('http://localhost:9000/api/critical-errors'); return false;">
+                        <span class="link-label">Errores Críticos</span>
+                        <span class="link-arrow">→</span>
+                    </a>
+                    <a href="#" class="link-item"
+                        onclick="openUrl('http://localhost:9000/api/orders/stats'); return false;">
+                        <span class="link-label">Estadísticas de Órdenes</span>
+                        <span class="link-arrow">→</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon green">L</div>
+                    <div class="card-title">
+                        <h3>Logs</h3>
+                        <p>Registro de actividad</p>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="openUrl('http://localhost:9000/realtime-logs.html')">
+                    Ver Logs en Tiempo Real
+                </button>
+                <button class="btn btn-secondary" onclick="openLogsInTxt()">
+                    Abrir Logs en TXT
+                </button>
+                <button class="btn btn-secondary" onclick="openUrl('http://localhost:9000/api/logs/history')">
+                    Ver Historial JSON
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon orange">P</div>
+                    <div class="card-title">
+                        <h3>Pantallas</h3>
+                        <p>Displays de órdenes</p>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="openUrl('http://localhost:9000/display/employee')">
+                    Display Empleado
+                </button>
+                <button class="btn btn-secondary" onclick="openUrl('http://localhost:9000/display/customer')">
+                    Display Cliente
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon purple">C</div>
+                    <div class="card-title">
+                        <h3>Configuración</h3>
+                        <p>Ajustes del sistema</p>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="openConfig()">
+                    Abrir Panel de Configuración
+                </button>
+                <div class="info-box">
+                    <h4>Recordatorio</h4>
+                    <p>Después de cambiar la configuración, reinicia la aplicación para aplicar los cambios.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon blue">Ó</div>
+                    <div class="card-title">
+                        <h3>Órdenes</h3>
+                        <p>Gestión de pedidos</p>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="openUrl('http://localhost:9000/api/orders/display')">
+                    Ver Órdenes Activas
+                </button>
+                <button class="btn btn-secondary" onclick="openUrl('http://localhost:9000/api/orders/history')">
+                    Historial de Órdenes
+                </button>
+                <button class="btn btn-secondary" onclick="openUrl('http://localhost:9000/api/orders/delivered')">
+                    Órdenes Entregadas
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { shell, ipcRenderer } = require('electron');
+        const path = require('path');
+        const fs = require('fs');
+        const os = require('os');
+
+        function openUrl(url) {
+            shell.openExternal(url);
+        }
+
+        function openConfig() {
+            ipcRenderer.send('open-config-window');
+        }
+
+        function openLogsInTxt() {
+            const tempDir = os.tmpdir();
+            const logFile = path.join(tempDir, `api-logs-${Date.now()}.txt`);
+
+            fetch('http://localhost:9000/api/logs/history?limit=500')
+                .then(res => res.json())
+                .then(data => {
+                    let logContent = 'API AUTOSERVICIO - LOGS\n';
+                    logContent += '='.repeat(50) + '\n';
+                    logContent += `Fecha: ${new Date().toLocaleString('es-CL')}\n`;
+                    logContent += `Total: ${data.logs ? data.logs.length : 0} logs\n`;
+                    logContent += '='.repeat(50) + '\n\n';
+
+                    if (data.logs && data.logs.length > 0) {
+                        data.logs.forEach(log => {
+                            logContent += `[${log.timestamp}] [${log.level.toUpperCase()}] ${log.message}\n`;
+                        });
+                    } else {
+                        logContent += 'No hay logs disponibles.\n';
+                    }
+
+                    fs.writeFileSync(logFile, logContent, 'utf8');
+                    shell.openPath(logFile);
+                })
+                .catch(error => {
+                    alert('Error al cargar los logs: ' + error.message);
+                });
+        }
+
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch('http://localhost:9000/health');
+                if (response.ok) {
+                    document.getElementById('apiStatus').textContent = 'Online';
+                    document.getElementById('apiStatus').parentElement.className = 'status-item success';
+                }
+            } catch (error) {
+                document.getElementById('apiStatus').textContent = 'Offline';
+                document.getElementById('apiStatus').parentElement.className = 'status-item warning';
+            }
+        }
+
+        checkAPIStatus();
+        setInterval(checkAPIStatus, 5000);
+    </script>
+</body>
+
+</html>

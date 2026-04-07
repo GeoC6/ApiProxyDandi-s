@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logs en Tiempo Real - API Autoservicio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #2d2d30;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            color: #569cd6;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-clear {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #d32f2f;
+        }
+
+        .btn-pause {
+            background: #ff9800;
+            color: white;
+        }
+
+        .btn-pause:hover {
+            background: #f57c00;
+        }
+
+        .btn-resume {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-resume:hover {
+            background: #45a049;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+            color: #858585;
+        }
+
+        .stats span {
+            padding: 4px 8px;
+            background: #3c3c3c;
+            border-radius: 4px;
+        }
+
+        .log-container {
+            flex: 1;
+            background: #1e1e1e;
+            border: 1px solid #3c3c3c;
+            border-radius: 8px;
+            overflow-y: auto;
+            padding: 15px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            padding: 4px 8px;
+            border-radius: 3px;
+            animation: slideIn 0.2s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .log-entry.error {
+            color: #f48771;
+            background: rgba(244, 135, 113, 0.1);
+        }
+
+        .log-entry.warn {
+            color: #dcdcaa;
+            background: rgba(220, 220, 170, 0.1);
+        }
+
+        .log-entry.success {
+            color: #4ec9b0;
+            background: rgba(78, 201, 176, 0.1);
+        }
+
+        .log-entry.info {
+            color: #9cdcfe;
+        }
+
+        .timestamp {
+            color: #858585;
+            margin-right: 8px;
+        }
+
+        .level {
+            font-weight: bold;
+            margin-right: 8px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+
+        .level.error {
+            background: #f44336;
+            color: white;
+        }
+
+        .level.warn {
+            background: #ff9800;
+            color: white;
+        }
+
+        .level.success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .level.info {
+            background: #2196f3;
+            color: white;
+        }
+
+        .connection-status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .connection-status.connected {
+            background: #4caf50;
+            color: white;
+        }
+
+        .connection-status.disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        .connection-status.connecting {
+            background: #ff9800;
+            color: white;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #252526;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3c3c3c;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4e4e4e;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div>
+            <h1>Logs en Tiempo Real - API Autoservicio</h1>
+            <div class="stats">
+                <span>Total: <strong id="totalLogs">0</strong></span>
+                <span>Errores: <strong id="errorCount">0</strong></span>
+                <span>Advertencias: <strong id="warnCount">0</strong></span>
+            </div>
+        </div>
+        <div class="controls">
+            <span class="connection-status" id="connectionStatus">Conectando...</span>
+            <button class="btn-pause" id="pauseBtn" onclick="togglePause()">Pausar</button>
+            <button class="btn-clear" onclick="clearLogs()">Limpiar</button>
+        </div>
+    </div>
+
+    <div class="log-container" id="logContainer">
+        <div class="log-entry info">
+            <span class="timestamp">[Iniciando...]</span>
+            <span class="message">Conectando al servidor de logs...</span>
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let isPaused = false;
+        let logs = [];
+        let errorCount = 0;
+        let warnCount = 0;
+
+        function connectToLogs() {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.textContent = 'Conectando...';
+            statusEl.className = 'connection-status connecting';
+
+            eventSource = new EventSource('http://localhost:9000/api/logs/stream');
+
+            eventSource.onopen = () => {
+                statusEl.textContent = 'Conectado';
+                statusEl.className = 'connection-status connected';
+                addLog({
+                    timestamp: new Date().toISOString(),
+                    level: 'success',
+                    message: 'Conexión establecida con el servidor de logs'
+                });
+            };
+
+            eventSource.onmessage = (event) => {
+                if (isPaused) return;
+
+                try {
+                    const data = JSON.parse(event.data);
+                    addLog(data);
+                } catch (error) {
+                    console.error('Error parsing log:', error);
+                }
+            };
+
+            eventSource.onerror = (error) => {
+                statusEl.textContent = 'Desconectado';
+                statusEl.className = 'connection-status disconnected';
+                addLog({
+                    timestamp: new Date().toISOString(),
+                    level: 'error',
+                    message: 'Error de conexión con el servidor de logs. Reintentando...'
+                });
+
+                setTimeout(() => {
+                    if (eventSource) {
+                        eventSource.close();
+                    }
+                    connectToLogs();
+                }, 5000);
+            };
+        }
+
+        function addLog(logData) {
+            if (isPaused) return;
+
+            logs.push(logData);
+
+            if (logData.level === 'error') errorCount++;
+            if (logData.level === 'warn') warnCount++;
+
+            const container = document.getElementById('logContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${logData.level}`;
+
+            const timestamp = new Date(logData.timestamp).toLocaleTimeString('es-CL', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            logEntry.innerHTML = `
+                <span class="timestamp">[${timestamp}]</span>
+                <span class="level ${logData.level}">${logData.level.toUpperCase()}</span>
+                <span class="message">${escapeHtml(logData.message)}</span>
+            `;
+
+            container.appendChild(logEntry);
+
+            if (logs.length > 500) {
+                container.removeChild(container.firstChild);
+                logs.shift();
+            }
+
+            container.scrollTop = container.scrollHeight;
+
+            updateStats();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function updateStats() {
+            document.getElementById('totalLogs').textContent = logs.length;
+            document.getElementById('errorCount').textContent = errorCount;
+            document.getElementById('warnCount').textContent = warnCount;
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            const btn = document.getElementById('pauseBtn');
+            if (isPaused) {
+                btn.textContent = 'Reanudar';
+                btn.className = 'btn-resume';
+            } else {
+                btn.textContent = 'Pausar';
+                btn.className = 'btn-pause';
+            }
+        }
+
+        function clearLogs() {
+            logs = [];
+            errorCount = 0;
+            warnCount = 0;
+            document.getElementById('logContainer').innerHTML = '';
+            updateStats();
+        }
+
+        connectToLogs();
+    </script>
+</body>
+
+</html>
