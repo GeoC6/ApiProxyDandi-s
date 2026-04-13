@@ -282,7 +282,7 @@ async function sendToOdoo(transactionData, dteResponse, isInternalVoucher = fals
             },
             tip_amount: parseFloat(sale_data.tip_amount || 0),
             customer_comment: sale_data.note || "",
-            tipo_dte: isInternalVoucher ? 0 : 39,
+            tipo_dte: isInternalVoucher ? '00' : 39,
             dte_folio: isInternalVoucher ? voucherNumber : (dteResponse?.folio || 0),
             dte_json: dteResponse ? JSON.stringify(dteResponse.originalDTE) : null,
             is_internal_voucher: isInternalVoucher,
