@@ -9,7 +9,7 @@ const router = express.Router();
 
 const getXSignUrl = () => getSetting('XSIGN_URL', process.env.XSIGN_URL || 'http://localhost:5999');
 const getTbkUrl = () => getSetting('TBK_URL', process.env.TBK_URL || 'https://localhost:8001');
-const getKdsUrl = () => getSetting('KDS_URL', process.env.KDS_URL || 'http://192.168.1.83:9001');
+const getKdsUrl = () => getSetting('KDS_URL', process.env.KDS_URL || 'http://localhost:9001');
 const getIm30Port = () => getSetting('IM30_PORT', process.env.IM30_PORT || 'COM8');
 
 const httpsAgent = new https.Agent({
@@ -177,8 +177,8 @@ function buildDTEData(transactionData) {
                         TpoCodigo: "INT1",
                         VlrCodigo: product.id.toString()
                     },
-                    NmbItem: productName,
-                    DscItem: descripcion,
+                    NmbItem: productName.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7E]/g, '').substring(0, 70),
+                    DscItem: descripcion.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7E]/g, '').substring(0, 1000),
                     QtyItem: product.cant,
                     PrcItem: Math.round(product.price),
                     MontoItem: Math.round(product.price * product.cant)
@@ -395,17 +395,20 @@ router.post('/create-order-im30', async (req, res) => {
             httpsAgent: httpsAgent
         });
 
-        if (!tbkResponse.data || tbkResponse.data.codigo_respuesta !== 'Aprobado') {
-            throw new Error(`Transbank rechazó la transacción: ${tbkResponse.data?.codigo_respuesta || 'Error desconocido'}`);
+        // GoTBK /sell_im30 devuelve { trace_id, trace_trama, data: { ...transaccion } }
+        const tbkData = tbkResponse.data?.data || tbkResponse.data;
+
+        if (!tbkData || tbkData.codigo_respuesta !== 'Aprobado') {
+            throw new Error(`Transbank rechazó la transacción: ${tbkData?.codigo_respuesta || 'Error desconocido'}`);
         }
 
-        log.success(` Transbank aprobado - Auth: ${tbkResponse.data.authorization_code}`);
-        log.info(`   Terminal: ${tbkResponse.data.terminal_id}`);
-        log.info(`   Monto: $${tbkResponse.data.amount}`);
-        log.info(`   Tarjeta: **** ${tbkResponse.data.ultimos_4_digitos}`);
+        log.success(` Transbank aprobado - Auth: ${tbkData.authorization_code}`);
+        log.info(`   Terminal: ${tbkData.terminal_id}`);
+        log.info(`   Monto: $${tbkData.amount}`);
+        log.info(`   Tarjeta: **** ${tbkData.ultimos_4_digitos}`);
 
         log.info('PASO 2: Adaptando datos IM30...');
-        const adaptedData = adaptIM30ToInternal(req.body, tbkResponse.data);
+        const adaptedData = adaptIM30ToInternal(req.body, tbkData);
 
         log.info('PASO 3: Generando DTE...');
         let dteResponse;
@@ -433,8 +436,8 @@ router.post('/create-order-im30', async (req, res) => {
         log.success(` ORDEN COMPLETADA: ${orderResult.orderNumber}`);
         log.success(`   - Transaction ID: ${orderResult.transactionId}`);
         log.success(`   - Folio DTE: ${dteResponse.folio}`);
-        log.success(`   - Auth TBK: ${tbkResponse.data.authorization_code}`);
-        log.success(`   - Terminal: ${tbkResponse.data.terminal_id}`);
+        log.success(`   - Auth TBK: ${tbkData.authorization_code}`);
+        log.success(`   - Terminal: ${tbkData.terminal_id}`);
         if (whatsapp) {
             log.success(`   - WhatsApp: ${whatsapp}`);
         }
@@ -468,6 +471,12 @@ router.post('/create-order-im30', async (req, res) => {
             error: error.message
         });
     }
+});
+
+router.post('/test-print-order', async (req, res) => {
+    const orderNumber = req.body.order_number || 'K99';
+    await printerService.printOrderNumber(orderNumber);
+    res.json({ success: true, order_number: orderNumber });
 });
 
 router.get('/printers/list', async (req, res) => {
@@ -649,7 +658,7 @@ function adaptIM30ToInternal(frontendData, tbkData) {
         note: note || '',
         products: [],
         payments: [{
-            id: 1,
+            id: 2,
             monto: calculatedTotal,
             externalData: tbkData
         }]

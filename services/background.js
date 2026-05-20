@@ -7,6 +7,15 @@ const BACKGROUND_INTERVAL = parseInt(process.env.BACKGROUND_INTERVAL) || 30000;
 const XSIGN_URL = process.env.XSIGN_URL || 'http://localhost:5999';
 const ODOO_URL = process.env.ODOO_URL || 'https://dandis.posgo.cl';
 
+function sanitizeDTEText(text, maxLength) {
+    return text
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^\x20-\x7E]/g, '')
+        .substring(0, maxLength)
+        .trim();
+}
+
 const INTERNAL_VOUCHER_METHODS = {
     7: 'E',
     8: 'P',
@@ -133,8 +142,8 @@ function buildDTEData(transactionData) {
                         TpoCodigo: "INT1",
                         VlrCodigo: product.id.toString()
                     },
-                    NmbItem: product.name || `Producto ${product.id}`,
-                    DscItem: product.customization || "N/A",
+                    NmbItem: sanitizeDTEText(product.name || `Producto ${product.id}`, 70),
+                    DscItem: sanitizeDTEText(product.customization || "N/A", 1000),
                     QtyItem: product.cant,
                     PrcItem: Math.round(product.price),
                     MontoItem: Math.round(product.price * product.cant)
@@ -293,12 +302,20 @@ async function sendToOdoo(transactionData, dteResponse, isInternalVoucher = fals
     if (sale_data.products && sale_data.products.length > 0) {
         sale_data.products.forEach(product => {
             if (product.cant > 0) {
+                let baseSubtotal = parseFloat(product.price * product.cant);
+                if (Array.isArray(product.attribute_lines)) {
+                    product.attribute_lines.forEach(attr => {
+                        if (attr.is_addition) {
+                            baseSubtotal += parseFloat(attr.price || 0) * parseInt(attr.qty || 0);
+                        }
+                    });
+                }
                 const productData = {
                     product_id: parseInt(product.id),
                     name: product.name,
                     qty: parseInt(product.cant),
-                    price_subtotal: parseFloat(product.price * product.cant),
-                    price_subtotal_incl: parseFloat((product.price * product.cant) * 1.19)
+                    price_subtotal: baseSubtotal,
+                    price_subtotal_incl: parseFloat(baseSubtotal * 1.19)
                 };
 
                 if (product.customization) {

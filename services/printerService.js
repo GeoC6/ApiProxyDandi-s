@@ -6,6 +6,7 @@ import path from 'path';
 import os from 'os';
 import { fileURLToPath } from 'url';
 import { log } from './logger.js';
+import { getSetting } from '../database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,7 +48,11 @@ class PrinterService {
         return process.env[key] || null;
     }
 
-    getPrinterName() {
+    async getPrinterName() {
+        try {
+            const saved = await getSetting('PRINTER_TICKET_NAME');
+            if (saved) return saved;
+        } catch (e) {}
         return this.getEnvValue('PRINTER_TICKET_NAME') || 'POS';
     }
 
@@ -73,7 +78,7 @@ class PrinterService {
     }
 
     async printOrderTicket(orderNumber, orderData = null) {
-        const printerName = this.getPrinterName();
+        const printerName = await this.getPrinterName();
         const exePath = this.getExePath();
 
         log.info('══════════════════════════════════════');
@@ -170,7 +175,7 @@ class PrinterService {
                         });
                     }
 
-                    if (item.customization) {
+                    if (item.customization && !(Array.isArray(item.attribute_lines) && item.attribute_lines.length > 0)) {
                         ticket += `  * ${item.customization}\n`;
                     }
                 });
@@ -216,6 +221,52 @@ class PrinterService {
 
         } catch (error) {
             log.error(`  FALLO impresion ${orderNumber}: ${error.message}`);
+            log.info('══════════════════════════════════════');
+        }
+    }
+
+    async printOrderNumber(orderNumber) {
+        const printerName = await this.getPrinterName();
+        const exePath = this.getExePath();
+
+        log.info('══════════════════════════════════════');
+        log.info(' IMPRIMIENDO NUMERO DE ORDEN');
+        log.info(`  Orden:     ${orderNumber}`);
+        log.info(`  Impresora: "${printerName}"`);
+
+        try {
+            let ticket = '';
+            ticket += CENTER;
+            ticket += '\n';
+            ticket += '================================\n';
+            ticket += '\n';
+            ticket += SIZE_HUGE + BOLD_ON;
+            ticket += `${orderNumber}\n`;
+            ticket += BOLD_OFF + SIZE_NORMAL;
+            ticket += '\n';
+            ticket += '================================\n';
+            ticket += '\n\n\n\n';
+
+            await this.ensureTempDir();
+            const filepath = path.join(this.tempDir, `orden_${orderNumber}_${Date.now()}.txt`);
+            await fs.writeFile(filepath, ticket, 'utf8');
+
+            const cmd = `"${exePath}" "${printerName}" "${filepath}"`;
+            log.info(`  Ejecutando: ${cmd}`);
+
+            const { stdout, stderr } = await execAsync(cmd, { timeout: 10000 });
+            log.info(`  stdout: "${stdout.trim()}"`);
+            if (stderr) log.warn(`  stderr: "${stderr.trim()}"`);
+
+            if (!stdout.includes('OK')) throw new Error(`PrinterHelper: ${stdout.trim()}`);
+
+            log.success(`  Número de orden ${orderNumber} impreso OK`);
+            log.info('══════════════════════════════════════');
+
+            setTimeout(() => fs.unlink(filepath).catch(() => { }), 3000);
+
+        } catch (error) {
+            log.error(`  FALLO impresion número de orden ${orderNumber}: ${error.message}`);
             log.info('══════════════════════════════════════');
         }
     }

@@ -195,7 +195,7 @@ app.get('/api/config', async (req, res) => {
             IM30_PORT: saved.IM30_PORT || process.env.IM30_PORT || 'COM8',
             TBK_URL: saved.TBK_URL || process.env.TBK_URL || 'https://localhost:8001',
             XSIGN_URL: saved.XSIGN_URL || process.env.XSIGN_URL || 'http://localhost:5999',
-            KDS_URL: saved.KDS_URL || process.env.KDS_URL || 'http://192.168.1.83:9001',
+            KDS_URL: saved.KDS_URL || process.env.KDS_URL || 'http://localhost:9001',
             ODOO_URL: saved.ODOO_URL || process.env.ODOO_URL || 'https://dandis.posgo.cl',
             PRINTER_ENABLED: saved.PRINTER_ENABLED || process.env.PRINTER_ENABLED || 'true',
             PRINTER_TICKET_NAME: saved.PRINTER_TICKET_NAME || process.env.PRINTER_TICKET_NAME || '',

@@ -382,6 +382,14 @@
                 </div>
 
                 <div class="info-card">
+                    <h3>KDS (Kitchen Display System)</h3>
+                    <div class="info-item" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+                        <label for="KDS_URL" style="font-size:0.85rem; color:#555; font-weight:600;">URL Servicio KDS</label>
+                        <input id="KDS_URL" type="text" placeholder="http://localhost:9001" style="width:100%; padding:8px 12px; border:1px solid #ddd; border-radius:8px; font-size:1rem; font-family:monospace;" />
+                    </div>
+                </div>
+
+                <div class="info-card">
                     <h3>Impresora</h3>
                     <div class="info-item" style="flex-direction: column; align-items: flex-start; gap: 6px;">
                         <label for="PRINTER_TICKET_NAME" style="font-size:0.85rem; color:#555; font-weight:600;">Nombre de la Impresora de Tickets</label>
@@ -417,7 +425,7 @@
 
     <script>
         const API_URL = 'http://localhost:9000';
-        const fields = ['IM30_PORT', 'TBK_URL', 'XSIGN_URL', 'ODOO_URL', 'PRINTER_TICKET_NAME', 'PRINTER_ENABLED'];
+        const fields = ['IM30_PORT', 'TBK_URL', 'XSIGN_URL', 'ODOO_URL', 'KDS_URL', 'PRINTER_TICKET_NAME', 'PRINTER_ENABLED'];
 
         function showStatus(message, type) {
             const statusEl = document.getElementById('statusMessage');
